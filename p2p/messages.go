@@ -15,6 +15,7 @@ const (
 	MessageAllBlocksRequest
 	MessageAllBlocksResponse
 	MessageNewBlockNotify
+	MessageNewTxNotify
 )
 
 type Message struct {
@@ -53,6 +54,11 @@ func notifyNewBlock(b *blockchain.Block, p *peer) {
 	p.inbox <- m
 }
 
+func notifyNewTx(tx *blockchain.Tx, p *peer) {
+	m := makeMessage(MessageNewTxNotify, tx)
+	p.inbox <- m
+}
+
 func handleMsg(m *Message, p *peer) {
 	switch m.Kind {
 	case MessageNewestBlock:
@@ -63,20 +69,16 @@ func handleMsg(m *Message, p *peer) {
 		utils.HandleErr(err)
 		if payload.Height >= b.Height {
 			fmt.Printf("Requesting all blocks from %s\n", p.key)
-
 			requestAllBlocks(p)
 		} else {
 			fmt.Printf("sending the newest block to %s\n", p.key)
-
 			sendNewestBlock(p)
 		}
 	case MessageAllBlocksRequest:
 		fmt.Printf("%s wants all the block.\n", p.key)
-
 		sendAllBlocks(p)
 	case MessageAllBlocksResponse:
 		fmt.Printf("Received all blocks from %s\n", p.key)
-
 		var payload []*blockchain.Block
 		utils.HandleErr(json.Unmarshal(m.Payload, &payload))
 		blockchain.Blockchain().Replace(payload)
@@ -84,6 +86,10 @@ func handleMsg(m *Message, p *peer) {
 		var payload *blockchain.Block
 		utils.HandleErr(json.Unmarshal(m.Payload, &payload))
 		blockchain.Blockchain().AddPeerBlock(payload)
+	case MessageNewTxNotify:
+		var payload *blockchain.Tx
+		utils.HandleErr(json.Unmarshal(m.Payload, &payload))
+		blockchain.Mempool().AddPeerTx(payload)
 	}
 
 }
