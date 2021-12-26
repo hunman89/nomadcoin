@@ -28,3 +28,28 @@ func TestSign(t *testing.T) {
 		t.Errorf("Sign() should return a hex encoded string, got %s", s)
 	}
 }
+
+func TestVerify(t *testing.T) {
+	type test struct {
+		input string
+		ok    bool
+	}
+	tests := []test{
+		{testPayload, true},
+		{"17899002d762e2f1663b2f558fd23d2277dc3a59f02f0e9f0b9e8deeaeba6e83", false},
+	}
+	for _, tc := range tests {
+		w := makeTestWallet()
+		ok := Verify(testSig, tc.input, w.Address)
+		if ok != tc.ok {
+			t.Error("Verify() could not verify testSignature and testPayload")
+		}
+	}
+}
+
+func TestRestoreBigInts(t *testing.T) {
+	_, _, err := restoreBigInts("xx")
+	if err == nil {
+		t.Error("RestoreBigInts should return error when payload is not hex")
+	}
+}
