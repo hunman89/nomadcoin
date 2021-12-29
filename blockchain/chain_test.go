@@ -221,5 +221,50 @@ func TestUTxOutsByAddress(t *testing.T) {
 			t.Error("uTxOut should not nil")
 		}
 	})
+}
+
+func TestBalanceByAddress(t *testing.T) {
+	t.Run("Balance should zero", func(t *testing.T) {
+		dbStorage = fakeDB{
+			fakeFindBlock: func() []byte {
+				b := &Block{
+					Height: 1,
+					Transactions: []*Tx{
+						{ID: "test", TxIns: []*TxIn{{TxID: "aa", Index: 0, Signature: "COINBASE"}}, TxOuts: []*TxOut{{Address: "bb"}}},
+					},
+				}
+				return utils.ToBytes(b)
+			},
+		}
+		bc := &blockchain{
+			Height:     1,
+			NewestHash: "xx",
+		}
+		amount := BalanceByAddress("xx", bc)
+		if amount != 0 {
+			t.Error("Balance should zero")
+		}
+	})
+	t.Run("Balance should not zero", func(t *testing.T) {
+		dbStorage = fakeDB{
+			fakeFindBlock: func() []byte {
+				b := &Block{
+					Height: 1,
+					Transactions: []*Tx{
+						{ID: "test", TxIns: []*TxIn{{TxID: "aa", Index: 0, Signature: "COINBASE"}}, TxOuts: []*TxOut{{Address: "xx", Amount: 100}}},
+					},
+				}
+				return utils.ToBytes(b)
+			},
+		}
+		bc := &blockchain{
+			Height:     1,
+			NewestHash: "xx",
+		}
+		amount := BalanceByAddress("xx", bc)
+		if amount == 0 {
+			t.Error("Balance should not zero")
+		}
+	})
 
 }
