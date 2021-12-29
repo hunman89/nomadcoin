@@ -177,3 +177,49 @@ func TestReplace(t *testing.T) {
 		t.Error("Replace should mutate the blockchain")
 	}
 }
+
+func TestUTxOutsByAddress(t *testing.T) {
+	t.Run("UTx not found", func(t *testing.T) {
+		dbStorage = fakeDB{
+			fakeFindBlock: func() []byte {
+				b := &Block{
+					Height: 1,
+					Transactions: []*Tx{
+						{ID: "test", TxIns: []*TxIn{{TxID: "aa", Signature: "COINBASE"}}, TxOuts: []*TxOut{{Address: "bb"}}},
+					},
+				}
+				return utils.ToBytes(b)
+			},
+		}
+		bc := &blockchain{
+			Height:     1,
+			NewestHash: "xx",
+		}
+		uTxOuts := UTxOutsByAddress("xx", bc)
+		if uTxOuts != nil {
+			t.Error("uTxOut should nil")
+		}
+	})
+	t.Run("UTx found", func(t *testing.T) {
+		dbStorage = fakeDB{
+			fakeFindBlock: func() []byte {
+				b := &Block{
+					Height: 1,
+					Transactions: []*Tx{
+						{ID: "test", TxIns: []*TxIn{{TxID: "aa", Index: 0, Signature: "COINBASE"}}, TxOuts: []*TxOut{{Address: "xx"}}},
+					},
+				}
+				return utils.ToBytes(b)
+			},
+		}
+		bc := &blockchain{
+			Height:     1,
+			NewestHash: "xx",
+		}
+		uTxOuts := UTxOutsByAddress("xx", bc)
+		if uTxOuts == nil {
+			t.Error("uTxOut should not nil")
+		}
+	})
+
+}
